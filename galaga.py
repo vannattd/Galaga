@@ -44,6 +44,18 @@ class Enemy(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load('assets/enemy.png')
         self.rect = self.image.get_rect()
+        self.vector = [5, 0]
+
+    def update(self, blocks):
+        if self.rect.x <= 0:
+            self.vector[0] = 5
+        if self.rect.x >= 740:
+            self.vector[0] = -5
+        hitObject = pygame.sprite.spritecollideany(self, blocks)
+        if hitObject:
+            for block in blocks:
+                block.vector[0] = self.vector[0]
+        self.rect.x += self.vector[0]
 
 
 class Laser(pygame.sprite.Sprite):
@@ -65,6 +77,9 @@ class Laser(pygame.sprite.Sprite):
             hitObject.kill()
             self.kill()
             game.score += 1
+        if pygame.sprite.collide_rect(self, paddle) & self.vector[1] < 0:
+            self.kill()
+            game.lives -= 1
         self.rect.y += self.vector[1]
 
 
@@ -85,11 +100,11 @@ class Game:
         self.ready = True
         self.score = 0
         self.lives = 5
-        for i in range(0, 5):
-            for j in range(0, 8):
+        for i in range(0, 4):
+            for j in range(0, 6):
                 block = Enemy()
-                block.rect.x = j * 100
-                block.rect.y = i * 100
+                block.rect.x = j * 100 + 100
+                block.rect.y = i * 100 + 20
                 self.blocks.add(block)
 
     def run(self):
@@ -98,7 +113,7 @@ class Game:
             self.screen.fill((255, 205, 255))
             for event in pygame.event.get():
                 if event.type == self.new_life_event.type:
-                    #self.lives -= 1
+                    # self.lives -= 1
                     if self.lives > 0:
                         ball = Laser()
                         ball.rect.x = self.paddle.rect.x
@@ -111,16 +126,16 @@ class Game:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_a:
-                        self.lives += 1
                         ball = Laser()
                         ball.rect.x = self.paddle.rect.x + 43
                         ball.rect.y = self.paddle.rect.y
-                        ball.vector = [0, -1]
+                        ball.vector = [0, -2]
                         self.balls.add(ball)
                     if event.key == pygame.K_SPACE:
-#                        self.balls.add(ball)
-                        self.balls.sprites()[0].vector = [-1, -1]
-                        self.ready = False
+                        ball = Laser()
+                        ball.rect.x = self.paddle.rect.x + 43
+                        ball.rect.y = self.paddle.rect.y
+                        ball.vector = [0, -2]
                     if event.key == pygame.K_LEFT:
                         self.paddle.rect.x -= 5
                         if self.paddle.rect.x <= 0:
@@ -129,12 +144,11 @@ class Game:
                         self.paddle.rect.x += 5
                         if self.paddle.rect.x >= 750:
                             self.paddle.rect.x = 750
-                #if self.ready:
-                    #self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
-
+                # if self.ready:
+                # self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
             self.balls.update(self, self.blocks, self.paddle)
             self.overlay.update(self.score, self.lives)
-            self.blocks.update()
+            self.blocks.update(self.blocks)
             self.balls.draw(self.screen)
             self.paddle.draw(self.screen)
             self.blocks.draw(self.screen)
