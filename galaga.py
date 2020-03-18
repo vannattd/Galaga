@@ -10,8 +10,8 @@ class Overlay(pygame.sprite.Sprite):
         # Equivalent statements:
         # pygame.sprite.Sprite.__init__(self)
         super(pygame.sprite.Sprite, self).__init__()
-        self.image = pygame.Surface((800, 20))
-        # self.image.fill((0, 0, 0))
+        self.image = pygame.image.load('assets/background.png')
+        self.image.fill((0, 0, 0))
         self.rect = self.image.get_rect()
         self.font = pygame.font.Font('freesansbold.ttf', 18)
         self.render('Score: 0        Lives: 5')
@@ -27,14 +27,13 @@ class Overlay(pygame.sprite.Sprite):
         self.render('Score: ' + str(score) + '        Lives: ' + str(lives))
 
 
-class Paddle(pygame.sprite.Sprite):
+class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.Surface((500, 10))
-        self.image.fill((0, 0, 0))
+        self.image = pygame.image.load('assets/player.png')
         self.rect = self.image.get_rect()
-        self.rect.x = 375
-        self.rect.y = 570
+        self.rect.x = 300
+        self.rect.y = 530
 
     def draw(self, screen):
         screen.blit(self.image, self.rect)
@@ -62,9 +61,9 @@ class Laser(pygame.sprite.Sprite):
             self.vector[0] *= -1
         if self.rect.y < 0:
             self.vector[1] *= -1
-        if self.rect.y > paddle.rect.y + 20:
-            game.balls.remove(self)
-            pygame.event.post(game.new_life_event)
+        #if self.rect.y > paddle.rect.y + 20:
+         #   game.balls.remove(self)
+          #  pygame.event.post(game.new_life_event)
         hitObject = pygame.sprite.spritecollideany(self, blocks)
         if hitObject:
             self.thud_sound.play()
@@ -91,11 +90,11 @@ class Game:
         self.screen = pygame.display.set_mode((800, 600))
         self.balls = pygame.sprite.Group()
         self.balls.add(Laser())
-        self.paddle = Paddle()
+        self.paddle = Player()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
         self.blocks = pygame.sprite.Group()
         self.overlay = Overlay()
-        self.screen.fill((255, 255, 255))
+        self.screen.fill((255, 205, 255))
         self.ready = True
         self.score = 0
         self.lives = 5
@@ -109,10 +108,10 @@ class Game:
     def run(self):
         self.done = False
         while not self.done:
-            self.screen.fill((255, 255, 255))
+            self.screen.fill((255, 205, 255))
             for event in pygame.event.get():
                 if event.type == self.new_life_event.type:
-                    self.lives -= 1
+                    #self.lives -= 1
                     if self.lives > 0:
                         ball = Laser()
                         ball.rect.x = self.paddle.rect.x + 25
@@ -129,7 +128,8 @@ class Game:
                         ball = Laser()
                         ball.vector = [- random.randint(1, 10), -1]
                         self.balls.add(ball)
-                    if event.key == pygame.K_SPACE and self.ready:
+                    if event.key == pygame.K_SPACE:
+#                        self.balls.add(ball)
                         self.balls.sprites()[0].vector = [-1, -1]
                         self.ready = False
                     if event.key == pygame.K_LEFT:
@@ -140,8 +140,8 @@ class Game:
                         self.paddle.rect.x += 5
                         if self.paddle.rect.x >= 750:
                             self.paddle.rect.x = 750
-                if self.ready:
-                    self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
+                #if self.ready:
+                    #self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
 
             self.balls.update(self, self.blocks, self.paddle)
             self.overlay.update(self.score, self.lives)
