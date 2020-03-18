@@ -145,6 +145,7 @@ class Game:
             for block in self.blocks:
                 if random.randint(0, 1000) == 1:
                     ball = Laser()
+                    ball.image = pygame.image.load('assets/elaser.png')
                     ball.rect.x = block.rect.x + 45
                     ball.rect.y = block.rect.y + 10
                     ball.vector = [0, 2]
