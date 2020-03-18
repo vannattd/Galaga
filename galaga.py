@@ -57,26 +57,14 @@ class Laser(pygame.sprite.Sprite):
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
     def update(self, game, blocks, paddle):
-        if self.rect.x < 1 or self.rect.x > 795:
-            self.vector[0] *= -1
-        if self.rect.y < 0:
-            self.vector[1] *= -1
-        #if self.rect.y > paddle.rect.y + 20:
-         #   game.balls.remove(self)
-          #  pygame.event.post(game.new_life_event)
+        if self.rect.y > 600:
+            self.kill()
         hitObject = pygame.sprite.spritecollideany(self, blocks)
         if hitObject:
             self.thud_sound.play()
-            self.vector[0] *= -1.1
-            self.vector[1] *= -1.1
             hitObject.kill()
+            self.kill()
             game.score += 1
-        if pygame.sprite.collide_rect(self, paddle):
-            self.vector[1] *= -1.2
-            self.vector[0] += random.random()
-            if random.randint(0, 1) == 1:
-                self.vector[0] *= -1
-        self.rect.x += self.vector[0]
         self.rect.y += self.vector[1]
 
 
@@ -89,7 +77,6 @@ class Game:
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600))
         self.balls = pygame.sprite.Group()
-        self.balls.add(Laser())
         self.paddle = Player()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
         self.blocks = pygame.sprite.Group()
@@ -114,7 +101,7 @@ class Game:
                     #self.lives -= 1
                     if self.lives > 0:
                         ball = Laser()
-                        ball.rect.x = self.paddle.rect.x + 25
+                        ball.rect.x = self.paddle.rect.x
                         self.balls.add(ball)
                         self.ready = True
                     else:
@@ -126,7 +113,9 @@ class Game:
                     if event.key == pygame.K_a:
                         self.lives += 1
                         ball = Laser()
-                        ball.vector = [- random.randint(1, 10), -1]
+                        ball.rect.x = self.paddle.rect.x + 43
+                        ball.rect.y = self.paddle.rect.y
+                        ball.vector = [0, -1]
                         self.balls.add(ball)
                     if event.key == pygame.K_SPACE:
 #                        self.balls.add(ball)
