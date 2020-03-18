@@ -69,17 +69,19 @@ class Laser(pygame.sprite.Sprite):
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
     def update(self, game, blocks, paddle):
-        if self.rect.y > 600:
+        if self.rect.y > 600 | self.rect.y < 0:
             self.kill()
         hitObject = pygame.sprite.spritecollideany(self, blocks)
         if hitObject:
-            self.thud_sound.play()
-            hitObject.kill()
-            self.kill()
-            game.score += 1
-        if pygame.sprite.collide_rect(self, paddle) & self.vector[1] < 0:
-            self.kill()
-            game.lives -= 1
+            if self.vector[1] < 0:
+                self.thud_sound.play()
+                hitObject.kill()
+                self.kill()
+                game.score += 1
+        if pygame.sprite.collide_rect(self, paddle):
+            if self.vector[1] > 0:
+                self.kill()
+                game.lives -= 1
         self.rect.y += self.vector[1]
 
 
@@ -112,16 +114,9 @@ class Game:
         while not self.done:
             self.screen.fill((255, 205, 255))
             for event in pygame.event.get():
-                if event.type == self.new_life_event.type:
-                    # self.lives -= 1
-                    if self.lives > 0:
-                        ball = Laser()
-                        ball.rect.x = self.paddle.rect.x
-                        self.balls.add(ball)
-                        self.ready = True
-                    else:
-                        pygame.quit()
-                        sys.exit(0)
+                if self.lives <= 0:
+                    pygame.quit()
+                    sys.exit(0)
                 if event.type == pygame.QUIT:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
@@ -136,6 +131,7 @@ class Game:
                         ball.rect.x = self.paddle.rect.x + 43
                         ball.rect.y = self.paddle.rect.y
                         ball.vector = [0, -2]
+                        self.balls.add(ball)
                     if event.key == pygame.K_LEFT:
                         self.paddle.rect.x -= 5
                         if self.paddle.rect.x <= 0:
@@ -146,6 +142,13 @@ class Game:
                             self.paddle.rect.x = 750
                 # if self.ready:
                 # self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
+            for block in self.blocks:
+                if random.randint(0, 1000) == 1:
+                    ball = Laser()
+                    ball.rect.x = block.rect.x + 45
+                    ball.rect.y = block.rect.y + 10
+                    ball.vector = [0, 2]
+                    self.balls.add(ball)
             self.balls.update(self, self.blocks, self.paddle)
             self.overlay.update(self.score, self.lives)
             self.blocks.update(self.blocks)
