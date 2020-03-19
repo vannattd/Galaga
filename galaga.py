@@ -27,6 +27,15 @@ class Overlay(pygame.sprite.Sprite):
         self.render('Score: ' + str(score) + '        Lives: ' + str(lives))
 
 
+class Speed(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load('assets/speed.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = 0
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -45,16 +54,23 @@ class Enemy(pygame.sprite.Sprite):
         self.image = pygame.image.load('assets/enemy.png')
         self.rect = self.image.get_rect()
         self.vector = [5, 0]
+        self.iterator = 0
 
     def update(self, enemies):
+        for enemy in enemies:
+            if enemy.rect.x >= 745:
+                self.vector[0] = -5
+
         if self.rect.x <= 0:
             self.vector[0] = 5
-        if self.rect.x >= 740:
-            self.vector[0] = -5
-        hitObject = pygame.sprite.spritecollideany(self, enemies)
-        if hitObject:
             for enemy in enemies:
                 enemy.vector[0] = self.vector[0]
+
+        if self.rect.x >= 750:
+            self.vector[0] = -5
+            for enemy in enemies:
+                enemy.vector[0] = self.vector[0]
+
         self.rect.x += self.vector[0]
 
 
@@ -68,7 +84,7 @@ class Laser(pygame.sprite.Sprite):
         self.vector = [0, 0]
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
-    def update(self, game, enemies, player):
+    def update(self, game, enemies, player, totalpowerup, power, existing):
         if self.rect.y > 600 | self.rect.y < 0:
             self.kill()
         hitObject = pygame.sprite.spritecollideany(self, enemies)
@@ -82,6 +98,14 @@ class Laser(pygame.sprite.Sprite):
             if self.vector[1] > 0:
                 self.kill()
                 game.lives -= 1
+        hitPowerUp = pygame.sprite.spritecollideany(self, totalpowerup)
+        if hitPowerUp:
+            if self.vector[1] < 0:
+                game.powerUp = 1
+                game.existingPower = 0
+                self.kill()
+                hitPowerUp.kill()
+
         self.rect.y += self.vector[1]
 
 
@@ -98,10 +122,15 @@ class Game:
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
         self.enemies = pygame.sprite.Group()
         self.overlay = Overlay()
+        self.speed = Speed()
+        self.totalPowerUps = pygame.sprite.Group()
         self.screen.fill((255, 205, 255))
         self.ready = True
         self.score = 0
         self.lives = 5
+        self.powerUp = 0
+        self.existingPower = 0
+        self.powerUpCounter = 0
         for i in range(0, 4):
             for j in range(0, 6):
                 enemy = Enemy()
@@ -133,11 +162,17 @@ class Game:
                         laser.vector = [0, -2]
                         self.projectiles.add(laser)
                     if event.key == pygame.K_LEFT:
-                        self.player.rect.x -= 5
+                        if self.powerUp == 0:
+                            self.player.rect.x -= 5
+                        else:
+                            self.player.rect.x -= 10
                         if self.player.rect.x <= 0:
                             self.player.rect.x = 0
                     if event.key == pygame.K_RIGHT:
-                        self.player.rect.x += 5
+                        if self.powerUp == 0:
+                            self.player.rect.x += 5
+                        else:
+                            self.player.rect.x += 10
                         if self.player.rect.x >= 750:
                             self.player.rect.x = 750
                 # if self.ready:
@@ -150,13 +185,31 @@ class Game:
                     laser.rect.y = enemy.rect.y + 10
                     laser.vector = [0, 2]
                     self.projectiles.add(laser)
-            self.projectiles.update(self, self.enemies, self.player)
+
+            if random.randint(0, 100) == 1:
+                if self.powerUp == 0:
+                    if self.existingPower == 0:
+                        speed = Speed()
+                        speed.rect.y = 400
+                        speed.rect.x = random.randint(0, 700)
+                        self.existingPower = 1
+                        self.totalPowerUps.add(speed)
+
+            if self.powerUpCounter == 400:
+                self.powerUp = 0
+                self.powerUpCounter = 0
+
+            if self.powerUp == 1:
+                self.powerUpCounter += 1
+
+            self.projectiles.update(self, self.enemies, self.player, self.totalPowerUps, self.powerUp, self.existingPower)
             self.overlay.update(self.score, self.lives)
             self.enemies.update(self.enemies)
             self.projectiles.draw(self.screen)
             self.player.draw(self.screen)
             self.enemies.draw(self.screen)
             self.overlay.draw(self.screen)
+            self.totalPowerUps.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(60)
 
