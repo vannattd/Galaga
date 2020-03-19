@@ -46,15 +46,15 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.vector = [5, 0]
 
-    def update(self, blocks):
+    def update(self, enemies):
         if self.rect.x <= 0:
             self.vector[0] = 5
         if self.rect.x >= 740:
             self.vector[0] = -5
-        hitObject = pygame.sprite.spritecollideany(self, blocks)
+        hitObject = pygame.sprite.spritecollideany(self, enemies)
         if hitObject:
-            for block in blocks:
-                block.vector[0] = self.vector[0]
+            for enemy in enemies:
+                enemy.vector[0] = self.vector[0]
         self.rect.x += self.vector[0]
 
 
@@ -68,17 +68,17 @@ class Laser(pygame.sprite.Sprite):
         self.vector = [0, 0]
         self.thud_sound = pygame.mixer.Sound('assets/thud.wav')
 
-    def update(self, game, blocks, paddle):
+    def update(self, game, enemies, player):
         if self.rect.y > 600 | self.rect.y < 0:
             self.kill()
-        hitObject = pygame.sprite.spritecollideany(self, blocks)
+        hitObject = pygame.sprite.spritecollideany(self, enemies)
         if hitObject:
             if self.vector[1] < 0:
                 self.thud_sound.play()
                 hitObject.kill()
                 self.kill()
                 game.score += 1
-        if pygame.sprite.collide_rect(self, paddle):
+        if pygame.sprite.collide_rect(self, player):
             if self.vector[1] > 0:
                 self.kill()
                 game.lives -= 1
@@ -93,10 +93,10 @@ class Game:
         pygame.mixer.music.play(-1)
         self.clock = pygame.time.Clock()
         self.screen = pygame.display.set_mode((800, 600))
-        self.balls = pygame.sprite.Group()
-        self.paddle = Player()
+        self.projectiles = pygame.sprite.Group()
+        self.player = Player()
         self.new_life_event = pygame.event.Event(pygame.USEREVENT + 1)
-        self.blocks = pygame.sprite.Group()
+        self.enemies = pygame.sprite.Group()
         self.overlay = Overlay()
         self.screen.fill((255, 205, 255))
         self.ready = True
@@ -104,58 +104,58 @@ class Game:
         self.lives = 5
         for i in range(0, 4):
             for j in range(0, 6):
-                block = Enemy()
-                block.rect.x = j * 100 + 100
-                block.rect.y = i * 100 + 20
-                self.blocks.add(block)
+                enemy = Enemy()
+                enemy.rect.x = j * 100 + 100
+                enemy.rect.y = i * 100 + 20
+                self.enemies.add(enemy)
 
     def run(self):
         self.done = False
         while not self.done:
             self.screen.fill((255, 205, 255))
             for event in pygame.event.get():
-                if self.lives <= 0:
+                if self.lives <= 0 or self.score == 24:
                     pygame.quit()
                     sys.exit(0)
                 if event.type == pygame.QUIT:
                     self.done = True
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_a:
-                        ball = Laser()
-                        ball.rect.x = self.paddle.rect.x + 43
-                        ball.rect.y = self.paddle.rect.y
-                        ball.vector = [0, -2]
-                        self.balls.add(ball)
+                        laser = Laser()
+                        laser.rect.x = self.player.rect.x + 43
+                        laser.rect.y = self.player.rect.y
+                        laser.vector = [0, -2]
+                        self.projectiles.add(laser)
                     if event.key == pygame.K_SPACE:
-                        ball = Laser()
-                        ball.rect.x = self.paddle.rect.x + 43
-                        ball.rect.y = self.paddle.rect.y
-                        ball.vector = [0, -2]
-                        self.balls.add(ball)
+                        laser = Laser()
+                        laser.rect.x = self.player.rect.x + 43
+                        laser.rect.y = self.player.rect.y
+                        laser.vector = [0, -2]
+                        self.projectiles.add(laser)
                     if event.key == pygame.K_LEFT:
-                        self.paddle.rect.x -= 5
-                        if self.paddle.rect.x <= 0:
-                            self.paddle.rect.x = 0
+                        self.player.rect.x -= 5
+                        if self.player.rect.x <= 0:
+                            self.player.rect.x = 0
                     if event.key == pygame.K_RIGHT:
-                        self.paddle.rect.x += 5
-                        if self.paddle.rect.x >= 750:
-                            self.paddle.rect.x = 750
+                        self.player.rect.x += 5
+                        if self.player.rect.x >= 750:
+                            self.player.rect.x = 750
                 # if self.ready:
                 # self.balls.sprites()[0].rect.x = self.paddle.rect.x + 25
-            for block in self.blocks:
+            for enemy in self.enemies:
                 if random.randint(0, 1000) == 1:
-                    ball = Laser()
-                    ball.image = pygame.image.load('assets/elaser.png')
-                    ball.rect.x = block.rect.x + 45
-                    ball.rect.y = block.rect.y + 10
-                    ball.vector = [0, 2]
-                    self.balls.add(ball)
-            self.balls.update(self, self.blocks, self.paddle)
+                    laser = Laser()
+                    laser.image = pygame.image.load('assets/elaser.png')
+                    laser.rect.x = enemy.rect.x + 45
+                    laser.rect.y = enemy.rect.y + 10
+                    laser.vector = [0, 2]
+                    self.projectiles.add(laser)
+            self.projectiles.update(self, self.enemies, self.player)
             self.overlay.update(self.score, self.lives)
-            self.blocks.update(self.blocks)
-            self.balls.draw(self.screen)
-            self.paddle.draw(self.screen)
-            self.blocks.draw(self.screen)
+            self.enemies.update(self.enemies)
+            self.projectiles.draw(self.screen)
+            self.player.draw(self.screen)
+            self.enemies.draw(self.screen)
             self.overlay.draw(self.screen)
             pygame.display.flip()
             self.clock.tick(60)
